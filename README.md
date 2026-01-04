@@ -1,30 +1,29 @@
 # ContextUI
 
-English | [日本語](./README_ja.md)
+[English](./README.md) | [日本語](./README_ja.md)
 
-A headless Generative UI engine that generates a spec from your React components and context, then renders UI based
-on that spec.
+A React-based headless engine that lets you generate and customize UI with LLMs.
 
-- Hyper-personalized UI: generate branded UIs at runtime and tailor them per user
-- Reuse existing assets: fully reuse your existing React components
-- No lock-in: bring your own spec generation logic
+Dynamically generate user-optimized UI while reusing your existing components.
 
-## Core Concepts
-![](/docs/readme/concept_compose.png)
+## Why ContextUI?
 
-The SDK provides:
-1. Compose existing Organisms in Atomic Design to build a Template (screen layout) spec
-2. Interpret the spec and render it
+### Hyper-personalization
+- Dynamically generate UI optimized for each user's role, behavior, and situation
+- Deliver tailored experiences for every user
 
-- Renders the components you define.
-  - Safe runtime environment
-  - Branded presentation
-  - Extensibility
-- You can choose any LLM for spec generation.
-  - You provide the spec generation logic
+### Fully reuse existing assets
+- Use your React components as-is
+- Keep your design system and branding intact
+- Runs in a safe runtime environment with extensibility
 
-## 30-sec Quickstart
-**Install**
+### Flexible spec generation
+- Choose any LLM (OpenAI, Anthropic, local models, etc.)
+- You implement and control the spec generation logic
+- Open JSON format, always portable
+
+## 30-sec Quickstart (get it running fast)
+
 ```bash
 npm install @context_ui/core
 // or yarn add @context_ui/core
@@ -65,14 +64,44 @@ export function App() {
 }
 ```
 
-ContextUI does not provide component state management, actions, or data binding.
+## Core Concepts
+### Architecture overview
+- Layer 1 builds Organisms bottom-up from data and actions
+- Layer 2 arranges Organisms top-down to match goals
+- Separating generation and composition keeps UI consistent and flexible
+
+Today we provide Layer 2 (Templates composition and rendering). Layer 1 is planned.
+
+### Layer 1: Organisms generation
+
+![](/docs/readme/concept_generate.png)
+
+In this phase, LLMs generate Organisms from Atoms/Molecules using UI context.
+- Inputs: your React components (Atoms / Molecules)
+- UI context: data model to render, available actions
+- Output: generated Organisms (e.g., a search bar)
+
+We plan to generate Organisms from "state to manage," "data," and "available actions."
+This goes beyond composing pre-defined components and will allow defining new components.
+
+### Layer 2: Templates composition
+
+![](/docs/readme/concept_compose.png)
+
+LLMs select and arrange Organisms to match user intent.
+- Inputs: Atoms / Molecules + existing Organisms + generated Organisms
+- System/user context: goals/intent, constraints
+- Output: Templates (screen layout spec)
 
 ## Use Cases
-TBD
+- **Personalized dashboards**: dynamically place widgets by user role
+- **Chatbot UI**: generate forms and cards based on conversation flow
+- **A/B test automation**: LLM generates multiple layout variations
 
 For more information, see [React Example](./examples/react-app).
 
 ## UI Spec (JSON)
+
 **Minimal structure**
 ```json
 {
@@ -92,14 +121,6 @@ For more information, see [React Example](./examples/react-app).
 - Only allowlisted components are valid
 - `component` uses registry names (case-insensitive)
 - `props` are passed through as-is
-
-## Future Work
-Today, ContextUI only composes Organisms, but we plan to enable generating Organisms from design systems. In other words,
-we aim to generate Organisms from the "state to manage", "data", and "available actions" in your design system.
-
-![](/docs/readme/concept_generate.png)
-
-This extends beyond composing pre-defined components and will allow you to define new components for higher flexibility.
 
 ## Contributing / License
 - Contributing guide: `CONTRIBUTING.md`
