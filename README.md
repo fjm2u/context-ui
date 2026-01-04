@@ -9,7 +9,7 @@ Dynamically generate user-optimized UI while reusing your existing components.
 ## Why ContextUI?
 
 ### Hyper-personalization
-- Dynamically generate UI optimized for each user's role, behavior, and situation
+- Dynamically generate UI optimized for each user's role, behavior history, and situation
 - Deliver tailored experiences for every user
 
 ### Fully reuse existing assets
@@ -26,40 +26,81 @@ Dynamically generate user-optimized UI while reusing your existing components.
 
 ```bash
 npm install @context_ui/core
-// or yarn add @context_ui/core
-// or pnpm add @context_ui/core
 ```
 
+### Traditional approach
+
 ```tsx
-import { ContextUI, createRegistry } from '@context_ui/core'
-
-type ProfilePanelProps = {
-  title: string
+// Hardcoded per user
+function Dashboard({ userRole }) {
+  if (userRole === 'sales') return <SalesDashboard />
+  else if (userRole === 'engineer') return <EngineerDashboard />
+  // Add components as roles increase...
 }
+```
 
-const ProfilePanel = ({ title }: ProfilePanelProps) => (
-  <section className="profile-panel">
-    <h2>{title}</h2>
-    <p>Display profile details here.</p>
-  </section>
+### With ContextUI
+
+```tsx
+import { ContextUI, createRegistry, generateSpec } from '@context_ui/core'
+import Anthropic from '@anthropic-ai/sdk'
+
+// Reuse your existing components
+const SummaryCard = ({ title, value }) => (
+  <div className='card'>
+    <h3>{title}</h3>
+    <p>{value}</p>
+  </div>
 )
 
+const TrendChart = ({ title }) => (
+  <div className='chart'>
+    <h3>{title}</h3>
+    {/* Render chart */}
+  </div>
+)
+
+// 1. Register components
 const registry = createRegistry()
-  .register('ProfilePanel', {
-    component: ProfilePanel,
-    propsHint: {
-      title: 'string',
-    },
+  .register('SummaryCard', {
+    component: SummaryCard,
+    propsHint: { title: 'string', value: 'string' }
+  })
+  .register('TrendChart', {
+    component: TrendChart,
+    propsHint: { title: 'string' }
   })
 
-const spec = {
-  version: '1.0',
-  components: [
-    { id: 'profile', component: 'ProfilePanel', props: { title: 'Profile' } },
-  ],
+// 2. Define a generator for your LLM
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY
+})
+
+const generator = async (prompt) => {
+  const response = await anthropic.messages.create({
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }]
+  })
+  return response.content[0].text
 }
 
-export function App() {
+// 3. Generate a spec from user context
+async function createDashboardSpec(userRole, userIntent) {
+  return await generateSpec({
+    prompt: `User role: ${userRole}, intent: ${userIntent}`,
+    generator,
+    registry,
+  })
+}
+
+// Sales manager
+const salesSpec = await createDashboardSpec('sales-manager', 'Check sales for this week')
+// Engineer
+const engineerSpec = await createDashboardSpec('engineer', 'Check system status')
+
+// 4. Render different UI per user with the same registry
+export function Dashboard({ spec }) {
   return <ContextUI spec={spec} registry={registry} />
 }
 ```
@@ -94,6 +135,7 @@ LLMs select and arrange Organisms to match user intent.
 - Output: Templates (screen layout spec)
 
 ## Use Cases
+[//]: # (Use cases that hit the pain point)
 - **Personalized dashboards**: dynamically place widgets by user role
 - **Chatbot UI**: generate forms and cards based on conversation flow
 - **A/B test automation**: LLM generates multiple layout variations
@@ -117,7 +159,7 @@ For more information, see [React Example](./examples/react-app).
 - `components[].children?`: child node array
 - `components[].id?`: stable key
 
-**Important rules**
+**Important rules (constraints)**
 - Only allowlisted components are valid
 - `component` uses registry names (case-insensitive)
 - `props` are passed through as-is

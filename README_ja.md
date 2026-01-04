@@ -27,41 +27,82 @@ LLMでUIを生成・カスタマイズできる、Reactベースのヘッドレ�
 
 ```bash
 npm install @context_ui/core
-// or yarn add @context_ui/core 
-// or pnpm add @context_ui/core
 ```
 
+### 従来の方法
+
 ```tsx
-import { ContextUI, createRegistry } from '@context_ui/core'
-
-type ProfilePanelProps = {
-  title: string
+// ユーザーごとにハードコードが必要
+function Dashboard({ userRole }) {
+    if (userRole === 'sales') return <SalesDashboard />
+    else if (userRole === 'engineer') return <EngineerDashboard />
+    // 役割が増えるたびにコンポーネント追加...
 }
+```
 
-const ProfilePanel = ({ title }: ProfilePanelProps) => (
-  <section className="profile-panel">
-    <h2>{title}</h2>
-    <p>ここにプロフィール情報を表示します。</p>
-  </section>
+### With ContextUI
+
+```tsx
+import { ContextUI, createRegistry, generateSpec } from '@context_ui/core'
+import Anthropic from '@anthropic-ai/sdk'
+
+// 既存のコンポーネントをそのまま使える
+const SummaryCard = ({ title, value }) => (
+    <div className='card'>
+        <h3>{title}</h3>
+        <p>{value}</p>
+    </div>
 )
 
-const registry = createRegistry()
-  .register('ProfilePanel', {
-    component: ProfilePanel,
-    propsHint: {
-      title: 'string',
-    },
-  })
+const TrendChart = ({ title }) => (
+    <div className='chart'>
+        <h3>{title}</h3>
+        {/* チャート描画 */}
+    </div>
+)
 
-const spec = {
-  version: '1.0',
-  components: [
-    { id: 'profile', component: 'ProfilePanel', props: { title: 'プロフィール' } },
-  ],
+// 1. コンポーネントを登録
+const registry = createRegistry()
+    .register('SummaryCard', {
+        component: SummaryCard,
+        propsHint: { title: 'string', value: 'string' }
+    })
+    .register('TrendChart', {
+        component: TrendChart,
+        propsHint: { title: 'string' }
+    })
+
+// 2. LLM用のgeneratorを定義
+const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY
+})
+
+const generator = async (prompt) => {
+    const response = await anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }]
+    })
+    return response.content[0].text
 }
 
-export function App() {
-  return <ContextUI spec={spec} registry={registry} />
+// 3. ユーザーコンテキストからSpecを生成
+async function createDashboardSpec(userRole, userIntent) {
+    return await generateSpec({
+        prompt: `User role: ${userRole}, intent: ${userIntent}`,
+        generator,
+        registry,
+    })
+}
+
+// 営業マネージャー向け
+const salesSpec = await createDashboardSpec('sales-manager', '今週の売上を確認したい')
+// エンジニア向け
+const engineerSpec = await createDashboardSpec('engineer', 'システム状態を確認したい')
+
+// 4. 同じregistryでも、ユーザーごとに異なるUIをレンダリング
+export function Dashboard({ spec }) {
+    return <ContextUI spec={spec} registry={registry} />
 }
 ```
 
