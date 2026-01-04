@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@context_ui/core": ["../../apps/core/src"],
+      "@context_ui/core/*": ["../../apps/core/src/*"],
+      "@context_ui/theme": ["../../apps/theme/src"],
+      "@context_ui/theme/*": ["../../apps/theme/src/*"]
+    }
+  },
+  "include": ["src"]
+}
